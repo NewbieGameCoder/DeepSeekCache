@@ -1,0 +1,50 @@
+{
+  "name": "dcache",
+  "version": "0.1.0",
+  "description": "DeepSeek LLM prompt-cache hit-rate optimizer for opencode, Claude Code, and Codex CLI.",
+  "type": "module",
+  "license": "MIT",
+  "bin": {
+    "dcache": "dist/cli.js"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "docs",
+    "Dockerfile",
+    "docker-compose.yml"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run tests/dcache-prefix.test.ts tests/dcache-anchor.test.ts tests/dcache-installer.test.ts tests/dcache-server.test.ts",
+    "test:e2e:opencode": "cross-env OPENCODE_E2E=1 vitest run tests/dcache-local-opencode.test.ts",
+    "test:e2e:claude": "cross-env CLAUDE_E2E=1 vitest run tests/dcache-local-claude.test.ts",
+    "test:e2e:codex": "cross-env CODEX_E2E=1 vitest run tests/dcache-local-codex.test.ts",
+    "verify": "npm run typecheck && npm run test && npm run build",
+    "prepack": "npm run build",
+    "serve": "node dist/cli.js serve",
+    "hook": "node dist/cli.js hook",
+    "uninstall": "node dist/cli.js uninstall",
+    "report": "node dist/cli.js report"
+  },
+  "dependencies": {
+    "commander": "^14.0.2"
+  },
+  "devDependencies": {
+    "@types/node": "^24.10.1",
+    "cross-env": "^10.1.0",
+    "tsup": "^8.5.1",
+    "typescript": "^5.9.3",
+    "vitest": "^4.1.7"
+  },
+  "engines": {
+    "node": ">=22.18.0"
+  }
+}

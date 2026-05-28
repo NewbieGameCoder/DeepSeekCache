@@ -1,0 +1,33 @@
+services:
+  dcache:
+    build: .
+    image: dcache:local
+    restart: unless-stopped
+    environment:
+      DCACHE_UPSTREAM_BASE_URL: ${DCACHE_UPSTREAM_BASE_URL:-https://api.deepseek.com/v1}
+      DCACHE_ANTHROPIC_UPSTREAM_BASE_URL: ${DCACHE_ANTHROPIC_UPSTREAM_BASE_URL:-https://api.anthropic.com}
+    ports:
+      - "${DCACHE_WEB_PORT:-48731}:48731"
+      - "${DCACHE_PROXY_PORT:-11488}:11488"
+    volumes:
+      - ./:/workspace
+      - dcache-data:/data
+    command:
+      - serve
+      - --project
+      - /workspace
+      - --data-dir
+      - /data
+      - --host
+      - 0.0.0.0
+      - --sidecar-url
+      - http://127.0.0.1:${DCACHE_WEB_PORT:-48731}
+      - --proxy-base-url
+      - http://127.0.0.1:${DCACHE_PROXY_PORT:-11488}/v1
+      - --port
+      - "48731"
+      - --proxy-port
+      - "11488"
+
+volumes:
+  dcache-data:
