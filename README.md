@@ -11,6 +11,18 @@ It is not a general cache system for every model. The tests, reports, and defaul
 
 This project was inspired by the cache-stability idea in https://github.com/esengine/DeepSeek-Reasonix. dcache is a separate implementation.
 
+## Tested impact
+
+The effect is visible immediately in the latest verified workspace run:
+
+| CLI route | Baseline cache hit ratio | With dcache / anchor |
+| --- | ---: | ---: |
+| Codex CLI + real DeepSeek V4 Flash | `0.1399` | `0.9921` hot case-first / `0.9921` cross-session first requests |
+| opencode + real DeepSeek V4 Flash | `0.2098` | `0.9916` anchor hot requests |
+| Claude Code + real DeepSeek Anthropic API | `0%` case-first | `100%` hot case-first / `100%` cross-session first requests |
+
+Verification snapshot: `npm run test` passed 35 tests, and `npm run build` passed.
+
 ## Quick start
 
 ```bash
@@ -117,21 +129,7 @@ The real tests use the same business prompts where possible:
 - Codex CLI E2E: [`tests/dcache-local-codex.test.ts`](tests/dcache-local-codex.test.ts)
 - anchor behavior: [`tests/dcache-anchor.test.ts`](tests/dcache-anchor.test.ts)
 
-Latest verified results in this workspace:
-
-- `npm run test`: 35 tests passed.
-- `npm run build`: passed.
-- Codex CLI + real DeepSeek V4 Flash:
-  - no-plugin baseline cache hit ratio: `0.1399`;
-  - plugin hot case-first cache hit ratio: `0.9921`;
-  - plugin cross-session first requests cache hit ratio: `0.9921`.
-- opencode + real DeepSeek V4 Flash:
-  - no-plugin baseline cache hit ratio: `0.2098`;
-  - anchor hot requests cache hit ratio: `0.9916`.
-- Claude Code + real DeepSeek Anthropic API:
-  - no-plugin case-first baseline cache hit ratio: `0%`;
-  - plugin hot case-first cache hit ratio: `100%`;
-  - plugin cross-session first requests cache hit ratio: `100%`.
+The headline results are shown near the top under **Tested impact**. This section keeps the test files and reproduction commands together.
 
 For Codex/opencode/Claude, the first anchored request may be a warm-up. The important cross-session signal is the next first request of a new case/session.
 
@@ -179,6 +177,18 @@ dcache 是一个本地小工具，专门优化 **DeepSeek** 的 prompt cache 命
 它不是所有模型通用的缓存系统；测试、报表和默认逻辑都围绕 DeepSeek 的缓存行为设计。
 
 本项目参考了 https://github.com/esengine/DeepSeek-Reasonix 的缓存稳定思路，但实现是独立的。
+
+## 测试效果一眼看
+
+打开 README 先看效果：当前工作区最新验证里，dcache 能把真实 DeepSeek 请求的缓存命中率稳定拉到接近满命中。
+
+| CLI 路由 | 不开插件 baseline | 使用 dcache / anchor 后 |
+| --- | ---: | ---: |
+| Codex CLI + 真实 DeepSeek V4 Flash | `0.1399` | `0.9921` hot case-first / `0.9921` 跨 session first requests |
+| opencode + 真实 DeepSeek V4 Flash | `0.2098` | `0.9916` anchor 热请求 |
+| Claude Code + 真实 DeepSeek Anthropic API | `0%` case-first | `100%` hot case-first / `100%` 跨 session first requests |
+
+验证快照：`npm run test` 35 个测试通过，`npm run build` 通过。
 
 ## 快速开始
 
@@ -286,21 +296,7 @@ Web 报表会展示：
 - Codex CLI E2E：[`tests/dcache-local-codex.test.ts`](tests/dcache-local-codex.test.ts)
 - anchor 行为：[`tests/dcache-anchor.test.ts`](tests/dcache-anchor.test.ts)
 
-当前工作区最新验证：
-
-- `npm run test`：35 个测试通过。
-- `npm run build`：通过。
-- Codex CLI + 真实 DeepSeek V4 Flash：
-  - 不开插件 baseline 缓存命中率：`0.1399`；
-  - 插件 hot case-first 缓存命中率：`0.9921`；
-  - 插件跨 session first requests 缓存命中率：`0.9921`。
-- opencode + 真实 DeepSeek V4 Flash：
-  - 不开插件 baseline 缓存命中率：`0.2098`；
-  - anchor 热请求缓存命中率：`0.9916`。
-- Claude Code + 真实 DeepSeek Anthropic API：
-  - 不开插件 case-first baseline 缓存命中率：`0%`；
-  - 插件 hot case-first 缓存命中率：`100%`；
-  - 插件跨 session first requests 缓存命中率：`100%`。
+前面的“测试效果一眼看”已经展示当前工作区最新验证结果；这里保留用例和复现命令。
 
 Codex/opencode/Claude 的第一条 anchor 请求可能只是预热；更关键的是下一条新 case/session 的 first request。
 
