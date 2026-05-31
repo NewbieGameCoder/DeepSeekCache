@@ -63,6 +63,19 @@ export function globalOpencodeConfigPath(): string {
   return join(homedir(), ".config", "opencode", "opencode.json");
 }
 
+// ADDED: Scans common opencode config paths and returns the first one found.
+// Used by autoDetectTargetsFunc to discover opencode installations without
+// requiring --project flag.
+export function defaultOpencodeConfigAny(projectRoot = defaultProjectRoot()): string {
+  const local = join(projectRoot, "opencode.json");
+  const global = globalOpencodeConfigPath();
+  const xdg = join(homedir(), ".config", "opencode", "opencode.json");
+  if (existsSync(local)) return local;
+  if (existsSync(global)) return global;
+  if (existsSync(xdg)) return xdg;
+  return local;
+}
+
 export function normalizeFilePath(path: string): string {
   const resolved = resolve(path);
   return existsSync(resolved) ? realpathSync.native(resolved) : resolved;

@@ -1,6 +1,6 @@
 {
-  "name": "dcache",
-  "version": "0.1.0",
+  "name": "dcache-proxy",
+  "version": "1.0.1",
   "description": "DeepSeek LLM prompt-cache hit-rate optimizer for opencode, Claude Code, and Codex CLI.",
   "type": "module",
   "license": "MIT",
@@ -16,14 +16,12 @@
   "files": [
     "dist",
     "README.md",
-    "docs",
-    "Dockerfile",
-    "docker-compose.yml"
+    "docs"
   ],
   "scripts": {
     "build": "tsup",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run tests/dcache-prefix.test.ts tests/dcache-anchor.test.ts tests/dcache-installer.test.ts tests/dcache-server.test.ts",
+    "test": "vitest run tests/dcache-prefix.test.ts tests/dcache-anchor.test.ts tests/dcache-installer.test.ts tests/dcache-server.test.ts tests/dcache-proxy-features.test.ts",
     "test:e2e:opencode": "cross-env OPENCODE_E2E=1 vitest run tests/dcache-local-opencode.test.ts",
     "test:e2e:claude": "cross-env CLAUDE_E2E=1 vitest run tests/dcache-local-claude.test.ts",
     "test:e2e:codex": "cross-env CODEX_E2E=1 vitest run tests/dcache-local-codex.test.ts",
@@ -45,6 +43,26 @@
     "vitest": "^4.1.7"
   },
   "engines": {
-    "node": ">=22.18.0"
-  }
+    "node": ">=18.0.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "keywords": [
+    "deepseek",
+    "prompt-cache",
+    "opencode",
+    "claude-code",
+    "codex-cli",
+    "dcache",
+    "llm-proxy"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/anomalyco/dcache.git"
+  },
+  "bugs": {
+    "url": "https://github.com/anomalyco/dcache/issues"
+  },
+  "homepage": "https://github.com/anomalyco/dcache#readme"
 }

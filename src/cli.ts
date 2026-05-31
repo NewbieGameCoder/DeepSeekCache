@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import { writeFileSync } from "node:fs";
+import { spawn } from "node:child_process";
 import { Command, Option } from "commander";
 
 import { detectOpencode } from "./detect.js";
@@ -35,11 +36,14 @@ program
   .option("--port <port>", "web/report port", parseNumber, 48731)
   .option("--proxy-port <port>", "LLM proxy port", parseNumber, 11488)
   .option("--no-auto-port", "fail instead of selecting the next free port when a port is occupied")
+  // ADDED: --daemon forks the process into background (Unix only)
+  .option("--daemon", "run in background as a daemon process (Unix only)")
   .option("--sidecar-url <url>", "public sidecar URL used in hook/install metadata")
   .option("--proxy-base-url <url>", "public LLM proxy base URL used in hook/install metadata")
   .option("--upstream <url>", "upstream DeepSeek-compatible base URL", "https://api.deepseek.com/v1")
   .option("--anthropic-upstream <url>", "upstream Anthropic Messages base URL", "https://api.anthropic.com")
   .action(async (opts) => {
+    startDaemonIfRequested(opts);
     const projectRoot = defaultProjectRoot(opts.project);
     const dataDir = opts.dataDir ?? defaultDataDir(projectRoot);
     const started = await startDCacheServer({
@@ -68,6 +72,8 @@ program
   .option("--data-dir <dir>", "data directory")
   .option("--sidecar-url <url>", "sidecar URL", "http://127.0.0.1:48731")
   .option("--proxy-base-url <url>", "proxy base URL", "http://127.0.0.1:11488/v1")
+  // ADDED: --auto scans common config paths and auto-installs to each detected tool
+  .option("--auto", "auto-discover opencode/Claude/Codex installations and configs")
   .option("--connect-api", "rewrite the AI client's API URL to the local dcache proxy")
   .addOption(new Option("--route-provider").hideHelp())
   .option("--target <target>", "opencode, claude, codex, both, or all", "opencode")
@@ -80,6 +86,11 @@ program
       proxyBaseUrl: opts.proxyBaseUrl,
       routeProvider: opts.connectApi || opts.routeProvider,
     };
+    // ADDED: --auto flag triggers auto-discovery for all supported tools
+    if (opts.auto) {
+      autoInstallAll(projectRoot, base as Parameters<typeof installHook>[0] & { sidecarUrl: string; proxyBaseUrl: string; routeProvider: boolean });
+      return;
+    }
     const result = installTarget(opts.target, base);
     process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
   });
@@ -154,6 +165,47 @@ program
     if (opts.out) writeFileSync(opts.out, text, "utf8");
     else process.stdout.write(text);
   });
+
+// ADDED: If --daemon is passed, fork the process to background and exit the parent.
+function startDaemonIfRequested(opts: Record<string, unknown>): void {
+  if (!opts.daemon) return;
+  const args = process.argv.slice(2).filter((a) => a !== "--daemon");
+  const child = spawn(process.argv[0] || "node", [process.argv[1]!, ...args], {
+    detached: true,
+    stdio: "ignore",
+    env: { ...process.env, DCACHE_DAEMONIZED: "1" },
+  });
+  child.unref();
+  process.stdout.write(`dcache daemon started (PID ${child.pid})\n`);
+  process.exit(0);
+}
+
+// ADDED: --auto discovers opencode/Claude/Codex configs and installs hooks on each.
+function autoInstallAll(
+  projectRoot: string,
+  base: Parameters<typeof installHook>[0] & { sidecarUrl: string; proxyBaseUrl: string; routeProvider: boolean }
+): void {
+  const { autoDetectTargetsFunc } = require("./detect.js") as {
+    autoDetectTargetsFunc: (root: string) => Record<string, { found: boolean; configPath?: string; dataDir?: string }>;
+  };
+  const targets = autoDetectTargetsFunc(projectRoot);
+  const results: Record<string, unknown> = {};
+  for (const [target, detected] of Object.entries(targets) as [string, { found: boolean; configPath?: string; dataDir?: string }][]) {
+    if (!detected.found) continue;
+    try {
+      if (target === "opencode") {
+        results[target] = installHook({ ...base, configPath: detected.configPath, dataDir: detected.dataDir || base.dataDir });
+      } else if (target === "claude") {
+        results[target] = installClaudeHook({ ...base, configPath: detected.configPath, dataDir: detected.dataDir || base.dataDir });
+      } else if (target === "codex") {
+        results[target] = installCodexHook({ ...base, configPath: detected.configPath, dataDir: detected.dataDir || base.dataDir });
+      }
+    } catch (err) {
+      results[target] = { ok: false, error: (err as Error).message };
+    }
+  }
+  process.stdout.write(`${JSON.stringify(results, null, 2)}\n`);
+}
 
 program.parseAsync(process.argv).catch((err) => {
   process.stderr.write(`${(err as Error).stack ?? (err as Error).message}\n`);

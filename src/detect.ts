@@ -9,6 +9,7 @@ import {
   defaultClaudeSettingsPath,
   defaultOpencodeConfigPath,
   globalOpencodeConfigPath,
+  defaultDataDir,
 } from "./paths.js";
 import type { DetectionResult } from "./types.js";
 
@@ -94,4 +95,72 @@ function run(
     stdout: res.stdout ?? "",
     stderr: res.stderr ?? "",
   };
+}
+
+// ----- New types and functions added for --auto flag -----
+
+interface DetectedTarget {
+  found: boolean;
+  configPath?: string;
+  dataDir?: string;
+}
+
+interface DetectedTargets {
+  opencode: DetectedTarget;
+  claude: DetectedTarget;
+  codex: DetectedTarget;
+}
+
+// ADDED: Scans common config paths for opencode, Claude Code, and Codex CLI.
+// Returns a structured result showing which tools were found and their config paths.
+// This enables `dcache hook --auto` to work without requiring --project.
+export function autoDetectTargetsFunc(projectRoot = process.cwd()): DetectedTargets {
+  const results: DetectedTargets = {
+    opencode: { found: false },
+    claude: { found: false },
+    codex: { found: false },
+  };
+
+  // Scan opencode config candidates
+  const opencodeCandidates = [
+    defaultOpencodeConfigPath(projectRoot),
+    globalOpencodeConfigPath(),
+    join(homedir(), ".config", "opencode", "opencode.jsonc"),
+    join(homedir(), ".config", "opencode", "opencode.json"),
+  ];
+  for (const p of opencodeCandidates) {
+    if (existsSync(p)) {
+      results.opencode = { found: true, configPath: p, dataDir: defaultDataDir(projectRoot) };
+      break;
+    }
+  }
+
+  // Scan Claude Code config candidates
+  const claudeCandidates = [
+    defaultClaudeSettingsPath(projectRoot),
+    join(projectRoot, ".claude", "settings.local.json"),
+    join(homedir(), ".claude", "settings.local.json"),
+    join(homedir(), ".claude", "settings.json"),
+  ];
+  for (const p of claudeCandidates) {
+    if (existsSync(p)) {
+      results.claude = { found: true, configPath: p, dataDir: defaultDataDir(projectRoot) };
+      break;
+    }
+  }
+
+  // Scan Codex CLI config candidates
+  const codexCandidates = [
+    defaultCodexHooksPath(),
+    defaultCodexProfilePath(),
+    join(homedir(), ".codex", "hooks.json"),
+  ];
+  for (const p of codexCandidates) {
+    if (existsSync(p)) {
+      results.codex = { found: true, configPath: p, dataDir: defaultDataDir(projectRoot) };
+      break;
+    }
+  }
+
+  return results;
 }
